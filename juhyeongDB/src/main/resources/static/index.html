@@ -8,6 +8,7 @@
 </head>
 
 <body>
+	<input type="text" id="numberInput">
     <button id="updateButton">Update Value</button>
     <p id="gameValue">Game Value: Initial Value</p>
 
@@ -16,6 +17,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script>
         var stompClient = null;
+        
+        // 메시지 전송
+	    var sendMessage = {
+	        click: 1  // content 키 추가
+	    };
 
         function connect() {
             var socket = new SockJS('/ws-game');
@@ -23,31 +29,24 @@
             stompClient.connect({}, function (frame) {
                 console.log('Connected: ' + frame);
 
-                
+                stompClient.send("/app/getGameData", {}, JSON.stringify(sendMessage));
 
                 $("#updateButton").click(function () {
-                    updateValue();
+					var numberValue = $("#numberInput").val();
+                    sendMessage.click = numberValue;
+                    stompClient.send("/app/click", {}, JSON.stringify(sendMessage));
                 });
 
-                stompClient.subscribe('/topic/gameValue', function (message) {
-                    updateGameValue(JSON.parse(message.body));
+                stompClient.subscribe('/topic/message', function (subscribeMessage) {
+                    updateGameValue(JSON.parse(subscribeMessage.body));
                 });
 
-                stompClient.subscribe('/topic/alert', function (message) {
-                    alert(JSON.parse(message.body));
-                });
-
-                stompClient.send("/app/getGameValue", {}, null);
             });
         }
 
-        function updateValue() {
-            // 숫자를 문자열로 변환하여 전송
-            stompClient.send("/app/updateValue", {}, 1);
-        }
 
         function updateGameValue(value) {
-            $("#gameValue").text("Game Value: " + value);
+            $("#gameValue").text("Game Value: " + value.HP);
         }
 
         $(document).ready(function () {
