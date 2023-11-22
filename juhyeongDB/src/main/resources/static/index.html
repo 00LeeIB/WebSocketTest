@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Game</title>
+</head>
+
+<body>
+    <button id="updateButton">Update Value</button>
+    <p id="gameValue">Game Value: Initial Value</p>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script>
+        var stompClient = null;
+
+        function connect() {
+            var socket = new SockJS('/ws-game');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+
+                
+
+                $("#updateButton").click(function () {
+                    updateValue();
+                });
+
+                stompClient.subscribe('/topic/gameValue', function (message) {
+                    updateGameValue(JSON.parse(message.body));
+                });
+
+                stompClient.subscribe('/topic/alert', function (message) {
+                    alert(JSON.parse(message.body));
+                });
+
+                stompClient.send("/app/getGameValue", {}, null);
+            });
+        }
+
+        function updateValue() {
+            // 숫자를 문자열로 변환하여 전송
+            stompClient.send("/app/updateValue", {}, 1);
+        }
+
+        function updateGameValue(value) {
+            $("#gameValue").text("Game Value: " + value);
+        }
+
+        $(document).ready(function () {
+            connect();
+        });
+    </script>
+</body>
+
+</html>
